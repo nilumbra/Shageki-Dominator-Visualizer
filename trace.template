@@ -1,13 +1,56 @@
 parse(
 {"input": 
-    {
-    　 "H":[...],
-     　"S":[...]
-     },
+  {
+  　 "height":[...],
+   　"risingSpeed":[...]
+   },
 
- "steps": 
-    [
-        [
-            {"coords": 
-                [[0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5]], 
-             "type": "findingMaximum"}, {"type": "foundMaximum", "coord": [1, 5]}, {"type": "findingNeighbor", "coord": [1, 5]}, {"type": "foundNeighbor", "coord": [1, 6]}, {"startRow": 0, "numRows": 11, "startCol": 6, "type": "subproblem", "numCols": 5}, {"coords": [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2], [10, 2]], "type": "findingMaximum"}, {"type": "foundMaximum", "coord": [5, 2]}, {"type": "findingNeighbor", "coord": [5, 2]}, {"type": "foundPeak", "coord": [5, 2]}], [{"type": "findingNeighbor", "coord": [0, 0]}, {"type": "foundNeighbor", "coord": [1, 0]}, {"type": "findingNeighbor", "coord": [1, 0]}, {"type": "foundPeak", "coord": [1, 0]}], [{"coords": [[5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9], [5, 10], [0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [5, 5], [6, 5], [7, 5], [8, 5], [9, 5], [10, 5]], "type": "findingMaximum"}, {"type": "foundMaximum", "coord": [1, 5]}, {"type": "findingNeighbor", "coord": [1, 5]}, {"type": "foundNeighbor", "coord": [1, 6]}, {"type": "bestSeen", "coord": [1, 6]}, {"startRow": 0, "numRows": 5, "startCol": 6, "type": "subproblem", "numCols": 5}, {"coords": [[2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2]], "type": "findingMaximum"}, {"type": "foundMaximum", "coord": [4, 2]}, {"type": "findingNeighbor", "coord": [4, 2]}, {"type": "foundPeak", "coord": [4, 2]}], [{"coords": [[5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9], [5, 10]], "type": "findingMaximum"}, {"type": "foundMaximum", "coord": [5, 1]}, {"type": "findingNeighbor", "coord": [5, 1]}, {"type": "bestSeen", "coord": [5, 1]}, {"type": "foundPeak", "coord": [5, 1]}]]})
+"steps": 
+  [
+    ########### Setting of for Binary Search ###########
+    {
+    "status": "calculatingUpperbound" # Note for javascript dev: e -> calculatingUpperbound(<height>, <risingSpeed>)
+    },
+    {
+    "value":  <upperbound>,
+    "status": "settingRight" # Note for javascript dev: e -> settingRight(
+    },
+    ########### Setting of for Binary Search ###########
+    #####
+    ########### Binary Search Iteration ###########
+    {
+     "value": [<left>, <right>],
+     "status": "calculatingMid" # Note for javascript dev: e -> calculatingMid(mid)
+    },
+    {
+     "value": <mid>,
+     "status": "drawMid" # Note for javascript dev: e -> drawLine(mid)
+    },
+    {
+     "value": <boolean>,
+     "status": "isAboveOriginalHeight"
+    },
+    {
+     "status": "isKaboomedBelowMid", ## SHOOTING OFF BALLOONS... ## 
+     # Note for javascript dev: e -> refreshBalloonView()
+
+     ## REALISTIC SAMPLE ##
+     ## [[ (index(h1) => 1) , Boolean(isBelowMid?)],]
+      "value": [[1, True], [4, True],...]
+    },
+    {
+     "value": ["right/left", <mid>],
+     "status": "updateBound"
+    },
+    {
+      ...repeating until (right - left > 1) == false
+    },
+    ########### Binary Search Iteration ###########
+    #####
+    ########### AnswerFound ###########
+    {
+     "value": mid,
+     "status": "answerFound"
+    }
+  ]        
+})

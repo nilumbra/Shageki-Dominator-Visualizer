@@ -18,6 +18,10 @@ class TraceRecord(object):
         """
 
         self.sequence = []
+    def calculatingMid(self, ):
+
+    def getMaxPenalty():
+
 
     def getMaximum(self, arguments, maximum):
         """

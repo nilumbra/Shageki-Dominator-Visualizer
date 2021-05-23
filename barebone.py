@@ -18,12 +18,14 @@ def P(height, rspeed, mid, mheight):
 
     H_temp = sorted(height)
 
-    # the penalty value is too low. Should simply set left = mid and continue to the next iteration
     # 当たり前のチェック problem.isStartingHeightAboveMid(H, mid, trace)
+    # "status": "isAboveOriginalHeight"
+    # the penalty value is too low. Should simply set left = mid and continue to the next iteration
     if(bi.bisect(H_temp, mid) < N): return mheight, False
     for i in range(N):
         # calculate the time limit for i-th balloon 
         # 時間がさし迫った順に割っていくべし
+        # t[i] represents the time limit you have to shoot the balloon.
         t[i] = int((mid - height[i]) / rspeed[i])
         mheight[i] = t[i] 
     
@@ -34,8 +36,9 @@ def P(height, rspeed, mid, mheight):
 
     # すべての風船を割れればok
     # Want to know if all balloons can be shot within penalty height.
+    # "status": "isKaboomedBelowMid",
     for i in range(N):
-        if t[i] < i:
+        if t[i] < i: #t = [0,2,2,3]
             # If not, record in trace which balloon violates the height limit
             return mheight, False
 
@@ -49,21 +52,25 @@ S = [5, 4, 3, 2, 1]
 N = len(H)
 
 fheight = [h + N*s for (h, s) in zip(H, S)]
-ub = max(fheight) # Highest possible final height = max penalty
 
-left, right = 0, ub
-mheight = {}
+# Highest possible final height = max penalty
+ub = max(fheight) # status: "calculatingUpperbound"
+lb = min(feight) 
+
+left, right = lb, ub # status: "settingRight" 
+mheight = {}  
 
 while right - left > 1:
-    mid = (left + right)/2 
+    mid = (left + right)/2 # "status": "calculatingMid"
     mheight, ok = P(H, S, mid, mheight)
 
+    # "status": "updateBound"
     if(ok):
         right = mid
     else:
         left = mid
 
-# print(mheight)
+# End of binary search. => "status": "answerFound"
 
 # Calculating final height for each balloon in the original input order 
 opt_height = []
