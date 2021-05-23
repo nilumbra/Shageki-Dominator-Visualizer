@@ -116,6 +116,8 @@ table, td {
 (function() {
   var Step, Visualizer, makeStepList, types, visualizer;
   types = ["findingMaximum", "foundMaximum", "findingNeighbor", "foundNeighbor", "bestSeen", "foundPeak"];
+
+  // Define and return a reference to the class Step
   Step = (function() {
     function Step(previous, change) {
       var preserveTypes, type;
@@ -225,6 +227,7 @@ table, td {
     };
     return Step;
   })();
+
   makeStepList = function(changeList) {
     var change, next, previous, stepList, _i, _len;
     previous = new Step;
@@ -237,6 +240,8 @@ table, td {
     }
     return stepList;
   };
+
+  // Visualizer Engine
   Visualizer = (function() {
     function Visualizer(trace) {
       var x;
@@ -251,7 +256,7 @@ table, td {
           _results.push(makeStepList(x));
         }
         return _results;
-      }).call(this);
+      }).call(this); // Crunches trace data as an instance of Visualizer gets created and stores them in allSteps
       this.stepIndex = 0;
       this.algorithmIndex = 0;
     }
@@ -363,6 +368,9 @@ table, td {
     return Visualizer;
   })();
   visualizer = null;
+
+  // Where does trace data come from?
+  // -> ./trace.jsonp
   window.parse = function(trace) {
     return visualizer = new Visualizer(trace);
   };
