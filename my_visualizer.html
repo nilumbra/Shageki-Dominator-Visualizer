@@ -1,26 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Document</title>
+	  <style type="text/css">
+body{
+	width: 1000px;
+	margin: 0 auto;
+}
+
+#status-container {
+  box-flex: 1;
+  -moz-box-flex: 1;
+  -webkit-box-flex: 1; }
+	  </style>
+	  <script src="https://d3js.org/d3.v6.js"></script>
+    <script type="text/javascript">
+	(function(){
+		var Step, Visualizer, makeStepList, visualizer;
+
+		status = ["calculatingUpperbound", "settingRight", "calculatingMid", "drawMid", "isAboveOriginalHeight", "isKaboomedBelowMid", "updateBound","answerFound"];
+
+		Step = (function(){
+			function Step(previous, change){
+				if (previous == null){
+					previous = null;
+				}
+				if (change == null){
+					change = {};
+				}
+
+				if (previous != null){
+					this.status = change.status;
+					this.mid = previous.mid;
+					this.left = previous.left;
+					this.right = previous.right;
+
+					switch(change.type){
+					case "calculatingUpperbound":
+
+						break;
+					case "settingRight": 
+					case "calculatingMid":
+					case "drawMid":
+					case "isAboveOriginalHeight":
+					case "isKaboomedBelowMid":
+					case "updateBound":
+					case "answerFound":
+					}
+				} else {
+					this.mid = 0;
+					this.left = 0;
+					this.right = 0;
+				}
+			}
+			return Step;
+		})();
+
+		makeStepList = function(changeList){
+			var change, next, previous, stepList, _i, _len;
+			previous = new Step;
+			stepList = [previous];
+			for(_i = 0, _len = changeList.length; _i < _len; _i++){
+				change = changeList[_i];
+				next = Step(previous, change);
+				stepList.push(next);
+				previous = next;
+			}
+			return stepList;
+		}
+
+		Visualizer = (function(){
+			function Visualizer(trace){
+				this.trace = trace;
+				this.input = this.trace.input;
+				this.allSteps = (function() {
+					var _i, _len, _ref, _results;
+					_ref = this.trace.steps;
+					_results = [];
+					for(_i = 0, _len = _ref.length; _i < _len; _i++){
+						x = _ref[_i];
+						_results.push(makeStepList(x));
+					}
+					return _results;
+				}).call(this);
+				this.stepIndex = 0;
+				this.problemIndex = 0;
+			}
+
+			Visualizer.prototype.getSteps = function() {
+				return this.allSteps[this.problemIndex];
+			};
+
+			Visualizer.prototype.setProblem = function(index) {
+				if ((0 <= index && index < this.allSteps.length)){
+					this.problemIndex = index;
+					this.stepIndex = 0;
+				}
+			};
+
+			Visualizer.prototype.setStatusElement = function(element) {
+				return this.statusElement = element;
+			}
+
+			Visualizer.prototype.setUp = function() {
+				console.log("Setting the ballons...");
+				console.log(this.input)
+			};
+			Visualizer.prototype.drawStep = function(step) {
+				if(!(step != null)) {
+					console.log("This should never happen.");
+					return;
+				}
+
+				if (this.statusElement != null) {
+					this.statusElement.innerHTML = "";
+					this.statusElement.innerHTML += this.step.status;
+				}
+
+				switch(change.type){
+					case "calculatingUpperbound":
+
+						break;
+					case "settingRight": 
+					case "calculatingMid":
+					case "drawMid":
+					case "isAboveOriginalHeight":
+					case "isKaboomedBelowMid":
+					case "updateBound":
+					case "answerFound":
+					}
+
+			};
+
+			return Visualizer
+		})();
+
+		visualizer = null;
+
+		window.parse = function(trace){
+			return visualizer = new Visualizer(trace)
+		}
+
+		window.onload = function(){
+			var problemActionMaker, problemControls, button,
+			firstFunction, firstInput, i, lastFunction, lastInput, nextFunction, nextInput, previousFunction, previousInput;
+			visualizer.setStatusElement(document.querySelector('#status'));
+			problemActionMaker = function(i) {
+				return function() {
+					return visualizer.setProblem(i);
+				}
+			}
+			visualizer.setUp();
+
+
+			// }
+
+			// drawBalloons(vis, 20, 480, 30);
+		}	
+	}).call(this);
+			
+		</script>
+		<script type="text/javascript" src="./trace.jsonp"></script>
+	</head>
+	
 <body>
-    
+    <h1>射撃王 -- 二分探索法</h1>
+    <div id="status_bar">
+    	<b>Status: </b> <span id="status"></span>
+    </div>
+    <div id="states"> 
+    	<b>Left:</b><span id="left">  </span>
+    	<b>Mid: </b><span id="mid">  </span>
+    	<b>Right </b><span id="right">  </span>
+    	<b>Upperbound: </b><span id="ub">  </span>
+     </div>
+
+    <div class="viewport"></div>
     <p id="text"></p>
 </body>
+<script>
+	var bln_c;//number of balloons
+	var vis, scale, x_axis, y_axis, offsetX, offsetY
+	var width = 1000,
+			height = 500;
+
+
+
+	vis = d3.select("body")
+					.append("svg")
+					.attr("width", parseInt(width))
+					.attr("height",parseInt(height));
+
+	// Offset everything
+	offsetX = 50
+	offsetY = -30
+
+	// Creating x-y axises
+	bln_c = 10;
+	const range = (start, stop, step) => Array.from({ length: (stop - start) / step + 1}, (_, i) => start + (i * step));
+	
+	var bln_idx = Array.from({length:bln_c + 1}, (_, i) => i)
+			max_h = 60,
+			h_ticks = range(0, max_h, 10)
+
+	x_range = 50 * bln_c
+	scale = d3.scaleLinear()
+						.domain([d3.min(bln_idx), d3.max(bln_idx)])
+						.range([0, x_range]);
+
+  x_axis = d3.axisBottom()
+  					 .scale(scale);
+  
+  scale = d3.scaleLinear()
+						.domain([d3.min(h_ticks), d3.max(h_ticks)])
+						.range([height, 0]);
+
+  y_axis = d3.axisLeft()
+  					 .scale(scale);
+
+  vis.append("g")
+  	 .attr("transform", "translate("+ offsetX + "," + (height+offsetY) +")")
+  	 .call(x_axis)
+  
+  vis.append("g")
+  	 .attr("transform", "translate("+ offsetX + "," + offsetY + ")")
+  	 .call(y_axis);
+
+
+  // drawBalloons = function(vp, x, y, offset){
+	var x = 20, y = 300, r = 20, offset_bx = (width-400)/bln_c, offset_by = -10, inbetween = x_range/bln_c;
+
+	console.log(inbetween)
+	for (let i = 0; i < bln_c; i++){
+		vis.append("svg:circle")
+		 .attr("r", r).attr("fill", "#fcba03")
+		 .attr("id", parseInt(i))
+		 .attr("cx", parseInt(offsetX+x_range/bln_c + i*inbetween))
+		 .attr("cy", parseInt(height + offsetY + offset_by - r))
+	}
+
+	// draw line
+	var midline_h = 100 
+	vis.append("line")
+		 .attr("x1", offsetX)
+     .attr("x2", offsetX + x_range)
+     .attr("y1", midline_h)
+     .attr("y2", midline_h)
+     .attr("stroke", "black")
+</script>
+
 </html>
 
 
-<script type="text/javascript">
-		window.parse = function(trace){
-			p = document.querySelector("#text")
-	    p.innerHTML = trace.input 
-	    console.log(trace.input)
-	    console.log(trace.steps)
 
-		}
-    
-</script>
 
-<script type="text/javascript" src="./trace.jsonp"></script>
+

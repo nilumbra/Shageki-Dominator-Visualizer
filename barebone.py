@@ -13,11 +13,11 @@
 import bisect as bi
 
 # いわゆる判定条件
-def P(height, rspeed, mid, mheight):
+def P(height, rspeed, mid):
     t = [-1] * N # list to keep time limits that balloons need to be shot
 
     H_temp = sorted(height)
-
+    mheight = []
     # 当たり前のチェック problem.isStartingHeightAboveMid(H, mid, trace)
     # "status": "isAboveOriginalHeight"
     # the penalty value is too low. Should simply set left = mid and continue to the next iteration
@@ -27,12 +27,12 @@ def P(height, rspeed, mid, mheight):
         # 時間がさし迫った順に割っていくべし
         # t[i] represents the time limit you have to shoot the balloon.
         t[i] = int((mid - height[i]) / rspeed[i])
-        mheight[i] = t[i] 
+        mheight.append([i,t[i]])
     
     # problem.isStartingHeightAboveMid(H, mid, trace)
     # Output visualization purpose
     t.sort()
-    mheight = {k: v for k, v in sorted(mheight.items(), key=lambda item: item[1])}
+    mheight.sort(key = lambda tup: tup[1])
 
     # すべての風船を割れればok
     # Want to know if all balloons can be shot within penalty height.
@@ -46,8 +46,8 @@ def P(height, rspeed, mid, mheight):
 
 # H = [1, -1, 3, -4, 8]
 # S = [2, 3,  1,  6, 5]
-H = [1, 2, 3, 4, 5]
-S = [5, 4, 3, 2, 1]
+H = [1, 4, 2, 4, 5]
+S = [1, 4, 5, 3, 2]
 
 N = len(H)
 
@@ -55,14 +55,14 @@ fheight = [h + N*s for (h, s) in zip(H, S)]
 
 # Highest possible final height = max penalty
 ub = max(fheight) # status: "calculatingUpperbound"
-lb = min(feight) 
+lb = 1 #min(fheight) 
 
 left, right = lb, ub # status: "settingRight" 
-mheight = {}  
+
 
 while right - left > 1:
-    mid = (left + right)/2 # "status": "calculatingMid"
-    mheight, ok = P(H, S, mid, mheight)
+    mid = int((left + right)/2) # "status": "calculatingMid"
+    mheight, ok = P(H, S, mid)
 
     # "status": "updateBound"
     if(ok):
@@ -73,14 +73,15 @@ while right - left > 1:
 # End of binary search. => "status": "answerFound"
 
 # Calculating final height for each balloon in the original input order 
-opt_height = []
-for item in mheight.items():
-    opt_height.append(H[item[0]] + item[0]*S[item[0]])
+# opt_height = [v for _0,_1 in sorted(mheight, key = )]
+
+# for item in mheight.items():
+#     opt_height.append(H[item[0]] + item[0]*S[item[0]])
 
 print("Theoretical final heights: " + ','.join([str(s) for s in fheight]))
 print("The lowest possible penalty is: %d" %(right))
-print("Optimzed final heights: " + ','.join([str(i) for i in opt_height]))
-print(mheight)
+# print("Optimzed final heights: " + ','.join([str(i) for i in opt_height]))
+# print(mheight)
 
 
 

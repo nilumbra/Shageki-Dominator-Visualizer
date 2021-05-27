@@ -1,4 +1,5 @@
-import peak
+# -*- coding: utf-8 -*-
+import shagekiou
 
 ################################################################################
 ########################### Class for Tracing Execution ########################
@@ -18,85 +19,57 @@ class TraceRecord(object):
         """
 
         self.sequence = []
-    def calculatingMid(self, ):
 
-    def getMaxPenalty():
-
-
-    def getMaximum(self, arguments, maximum):
-        """
-        A function for recording the fact that the getMaximum function of
-        some subproblem has been called.
-
-        RUNTIME: O(1)
-        """
-
-        self.sequence.append({
-            "type" : "findingMaximum",
-            "coords" : arguments
-        })
-
-        self.sequence.append({
-            "type" : "foundMaximum",
-            "coord" : maximum
-        })
-
-    def getBetterNeighbor(self, neighbor, better):
-        """
-        A function for recording the fact that the getBetterNeighbor function
-        of some subproblem has been called.
-
-        RUNTIME: O(1)
-        """
-
-        self.sequence.append({
-            "type" : "findingNeighbor",
-            "coord" : neighbor
-        })
-
-        if (neighbor != better):
-            self.sequence.append({
-                "type" : "foundNeighbor",
-                "coord" : better
+    def calculatingUpperbound(self,upperbound):
+        self.sequence.append(
+            {
+             "status": "calculatingUpperbound",
+             "value": upperbound
             })
 
-    def setProblemDimensions(self, subproblem):
-        """
-        A function for recording the fact that the dimensions of the currently
-        studied subproblem have changed.
+    def settingRight(self, right):
+        self.sequence.append(
+            {
+            "status": "settingRight",
+             "value": right
+            })
 
-        RUNTIME: O(1)
-        """
+    def settingLeft(self, left):
+        self.sequence.append(
+            {
+            "status": "settingLeft",
+             "value": left
+            })
 
-        self.sequence.append({
-            "type" : "subproblem",
-            "startRow" : subproblem.startRow,
-            "numRows" : subproblem.numRow,
-            "startCol" : subproblem.startCol,
-            "numCols" : subproblem.numCol
-        })
+    def calculatingMid(self, mid):
+        self.sequence.append(
+            {
+            "status": "calculatingMid",
+            "value": mid
+            })
 
-    def setBestSeen(self, bestSeen):
-        """
-        A function for recording the fact that the variable "bestSeen" has been
-        updated.
+    def drawMid(self):
+        self.sequence.append(
+            {
+            "status": "drawMid",
+            })        
 
-        RUNTIME: O(1)
-        """
+    def isAboveOriginalHeight(self, ok):
+        self.sequence.append(
+            {
+            "status": "isAboveOriginalHeight",
+            "value": ok
+            })        
 
-        self.sequence.append({
-            "type" : "bestSeen",
-            "coord" : bestSeen
-        })
+    def isKaboomedBelowMid(self, index, isBelow):
+        self.sequence.append(
+            {
+            "status": "isKaboomedBelowMid",
+            "value": [index, isBelow]
+            })
 
-    def foundPeak(self, peak):
-        """
-        A function for recording the fact that the peak has been found.
-
-        RUNTIME: O(1)
-        """
-
-        self.sequence.append({
-            "type" : "foundPeak",
-            "coord" : peak
-        })
+    def answerFound(self):
+        self.sequence.append(
+            {
+            "status": "answerFound"
+            })

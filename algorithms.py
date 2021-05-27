@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import shagekiou
 import trace
 
@@ -7,27 +8,34 @@ import trace
 
 #*****************************射撃王御用*****************************
 def algorithm1(problem, trace = None):
+    # find the upperbound and lowerbound
+    ub, lb = problem.maxPenalty(trace), 0
 
-    # find the maximum in the dividing column
-    bestLoc = problem.getMaximum(divider, trace)
+    #setting left bound and right bound
+    left, right = lb, ub
+    if not trace is None:
+        trace.settingLeft(left)
+        trace.settingRight(right)
 
-    # see if the maximum value we found on the dividing line has a better
-    # neighbor (which cannot be on the dividing line, because we know that
-    # this location is the best on the dividing line)
-    neighbor = problem.getBetterNeighbor(bestLoc, trace)
+    while right - left > 1:
+        mid = int((left + right)/2) # "status": "calculatingMid"
+        if not trace is None:
+            trace.calculatingMid(mid)
+            trace.drawMid()
 
-    # this is a peak, so return it
-    if neighbor == bestLoc:
-        if not trace is None: trace.foundPeak(bestLoc)
-        return bestLoc
+        ok = problem.P(mid, trace)
+
+        if(ok):
+            right = mid
+            if not trace is None: trace.settingRight(right)
+        else:
+            left = mid
+            if not trace is None: trace.settingLeft(left)
   
-    if not trace is None: trace.setProblemDimensions(sub)
-    result = algorithm1(sub, trace)
-    return problem.getLocationInSelf(sub, result)
+
+    if not trace is None: trace.answerFound()
 #*****************************射撃王御用*****************************
 
 ################################################################################
 ################################ Helper Methods ################################
 ################################################################################
-
-

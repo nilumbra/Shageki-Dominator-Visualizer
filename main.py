@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 import sys
-import peak
+import shagekiou
 import trace
 import algorithms
 import json
@@ -7,7 +8,7 @@ import utils
 
 
 #*****************************射撃王御用*****************************
-def loadProblem(file = "problem.py", variable = "problemMatrix"):
+def loadProblem(file = "problem.py", variable = "problem_params"):
 
     """
     Loads a matrix from a python file, and constructs a PeakProblem from it.
@@ -16,7 +17,7 @@ def loadProblem(file = "problem.py", variable = "problemMatrix"):
     namespace = dict()
     with open(file) as handle:
         exec(handle.read(), namespace)
-    return peak.createProblem(namespace[variable])
+    return shagekiou.createProblem(namespace[variable])
 #*****************************射撃王御用*****************************
 
 def main():
@@ -35,8 +36,8 @@ def main():
     tracer = trace.TraceRecord()
 
     # What, if any, should be the return value of shagekiou algorithm?
-    shagekiou = algorithm(problem, trace = tracer)　
-    # steps.append(tracer.sequence)
+    shagekiou = algorithm(problem, trace = tracer)
+    steps.append(tracer.sequence)
     
     # status = "is NOT a peak (INCORRECT!)"
     # if problem.isPeak(peak):
@@ -49,7 +50,7 @@ def main():
         traceFile.write("parse(")
 
         json.dump({
-            "input" : problem.array,
+            "input" : [problem.height, problem.rising_speed],
             "steps" : steps
         }, traceFile)
 
