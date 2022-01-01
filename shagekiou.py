@@ -50,6 +50,7 @@ class ShagekiouProblem(object):
         # Want to know if all balloons can be shot within penalty height.
         # "status": "isKaboomedBelowMid",
         for i in range(N):
+            if not trace is None: trace.ballonFloat([h+i*s for (h, s) in zip(self.height, self.rising_speed)])
             if t[i][1] < i: #t = [0,2,2,3]
                 # If not, record in trace which balloon violates the height limit
                 if not trace is None: trace.isKaboomedBelowMid(t[i][0], False)

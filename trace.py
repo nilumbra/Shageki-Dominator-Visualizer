@@ -60,6 +60,11 @@ class TraceRecord(object):
             "status": "isAboveOriginalHeight",
             "value": ok
             })        
+    def ballonFloat(self, position):
+        self.sequence.append(
+            {"status": "balloonFloat",
+             "value": position
+            })
 
     def isKaboomedBelowMid(self, index, isBelow):
         self.sequence.append(

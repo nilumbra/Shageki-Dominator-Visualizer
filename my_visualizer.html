@@ -6,16 +6,100 @@
 		<title>Document</title>
 	  <style type="text/css">
 body{
-	width: 1000px;
+	width: 1800px;
 	margin: 0 auto;
+}
+
+input{
+	height:30px;
+	width:60px
+}
+#control-container {
+  display: -webkit-box;
+  display: -moz-box;
+  display: box; 
+
+  width: 100%;
+  height:auto;
+  padding: 10px 0px;
+  text-align: center; 
 }
 
 #status-container {
   box-flex: 1;
   -moz-box-flex: 1;
-  -webkit-box-flex: 1; }
+  -webkit-box-flex: 1; 
+  font-size: 1.875em;
+}
+
+#status{
+	font-family: "Lucida Console", "Courier New", monospace;
+	font-weight: bold;
+	color: navy;
+}
+
+#backwards, #forwards {
+  box-flex: 0;
+  -moz-box-flex: 0;
+  -webkit-box-flex: 0; }
+
+#states{
+	display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  justify-content:space-between;
+  font-size: 1.5em;
+	width: 100%;
+  padding: 10px 0px;
+ /* text-align: center; */	
+}
+
+#svg{
+	overflow: auto;
+}
+/*#left, #mid, #right, #ub{
+	box-flex: 1;
+  -moz-box-flex: 1;
+  -webkit-box-flex: 1;
+}*/
 	  </style>
 	  <script src="https://d3js.org/d3.v6.js"></script>
+
+	</head>
+	
+<body>
+    <h1>射撃王 -- 二分探索法</h1>
+
+    <div id="control-container">
+	  	<div id="backwards">
+     <!--    <input id="first" type="button" value="|<<"/> -->
+				<input id="previous" type="button" value="<"/>
+	  	</div>
+
+	    <div id="status-container">
+	    	<span id="status">Click controls to start </span>
+	    </div>
+
+	    <div id="forwards">
+	        <input id="next" type="button" value=">" autofocus="autofocus" />
+<!-- 		    <input id="last" type="button" value=">>|"/> -->
+		  </div>
+		</div>
+    
+    <div id="states"> 
+    	<b>Left:</b><span id="left"> 0 </span>
+    	<b>Mid: </b><span id="mid"> 0 </span>
+    	<b>Right: </b><span id="right"> 0 </span>
+    	<b>Upperbound: </b><span id="ub"> 0 </span>
+     </div>
+
+
+    <div class="viewport"></div>
+    <p id="text"></p>
+</body>
+<script>
+	
+</script>
     <script type="text/javascript">
 	(function(){
 		var Step, Visualizer, makeStepList, visualizer;
@@ -25,28 +109,52 @@ body{
 		Step = (function(){
 			function Step(previous, change){
 				if (previous == null){
-					previous = null;
+					this.previous = null;
+				}else{
+					this.previous = previous;
 				}
 				if (change == null){
+					// console.log("change is null!!!")
 					change = {};
 				}
 
 				if (previous != null){
+					// console.log("previous is not null. Everything good.")
+					// console.log(`{"status:"${change.status}, "value:" ${change.value}}`)
 					this.status = change.status;
 					this.mid = previous.mid;
 					this.left = previous.left;
 					this.right = previous.right;
+					this.upperbound = previous.upperbound;
 
-					switch(change.type){
+					switch(change.status){
 					case "calculatingUpperbound":
-
+						this.upperbound = change.value;
 						break;
 					case "settingRight": 
+						this.right = change.value;
+						break;
 					case "calculatingMid":
+						this.mid = change.value;
+						break;
 					case "drawMid":
 					case "isAboveOriginalHeight":
+						this.valid = change.value;
+						break;
+					case "balloonFloat":
+						this.pos = change.value;
+						break;
 					case "isKaboomedBelowMid":
-					case "updateBound":
+						this.balloon_index = change.value[0];
+						if(change.value[1]){
+							this.valid = true
+						}else{
+							this.valid = false
+						}
+					  break;
+					case "settingLeft":
+						this.left = change.value;
+						break;
 					case "answerFound":
 					}
 				} else {
@@ -62,14 +170,20 @@ body{
 			var change, next, previous, stepList, _i, _len;
 			previous = new Step;
 			stepList = [previous];
+			// console.log(changeList)
 			for(_i = 0, _len = changeList.length; _i < _len; _i++){
 				change = changeList[_i];
-				next = Step(previous, change);
+				// console.log(change)
+				next = new Step(previous, change);
 				stepList.push(next);
 				previous = next;
+				// console.log(previous)
 			}
+			// console.log(stepList);
 			return stepList;
 		}
+
+		range_Step = (start, stop, step) => Array.from({ length: (stop - start) / step + 1}, (_, i) => start + (i * step))
 
 		Visualizer = (function(){
 			function Visualizer(trace){
@@ -87,10 +201,65 @@ body{
 				}).call(this);
 				this.stepIndex = 0;
 				this.problemIndex = 0;
+				this.bs_iter_c = 0;
+
+				// Visual parameters for svg 
+				this.width = 1500;
+				this.height = 1200;
+
+				// Axes Offset 
+				this.offsetX = 50
+				this.offsetY = -30
+				this.upperbound = 0
+				this.x_range = this.width-200;
+
+
+				// Number of balloons
+				this.bln_c = this.input[0].length
+				this.r = (this.x_range/this.bln_c)*3.5/10;
+				this.inbetween = this.x_range/this.bln_c; // distance between balloons
+				this.curr_height = this.input[0];
+				this.sec = 0;
+
+				// Setting up viewport
+				this.vis = null;
+				this.vis = d3.select("body")
+				.append("svg")
+				.attr("id", "svg")
+				.attr("width", parseInt(this.width)) 
+				.attr("height",parseInt(this.height));
+
+				this.curr_mid = 0;
 			}
 
 			Visualizer.prototype.getSteps = function() {
 				return this.allSteps[this.problemIndex];
+			};
+
+			Visualizer.prototype.justifyTime = function() {
+				// body...
+				// if(this.sec == 5){
+				// 	this.sec = 0
+				// }
+			};
+			Visualizer.prototype.refresh = function() {
+				// console.log(this.getSteps[this.stepIndex]);
+				this.justifyTime();
+				return this.drawStep(this.getSteps()[this.stepIndex])
+			}
+
+			Visualizer.prototype.previous = function() {
+				if(this.stepIndex - 1 >= 0){
+					this.stepIndex--;
+				}
+				return this.refresh()
+			};
+
+			Visualizer.prototype.next = function() {
+				if(this.stepIndex + 1 < this.getSteps().length){
+					this.stepIndex++
+				}
+				return this.refresh()
 			};
 
 			Visualizer.prototype.setProblem = function(index) {
@@ -104,9 +273,83 @@ body{
 				return this.statusElement = element;
 			}
 
+			// Function: Draw balloons according to height
+			// Argument: height
+			// Return: void
+			Visualizer.prototype.drawBalloons = function(step) {
+				var offset_bx = (this.width-400)/this.bln_c, offset_by = -10;
+
+				// let circle = document.querySelector("#circle0"),
+				let ub = this.getSteps()[1].upperbound;
+
+				h_scale = (this.height + this.offsetY)/ub;
+				if((step==null)){
+					// Create new circles
+					for(let i = 0;i < this.bln_c;i++){
+
+						h_y = (ub-this.input[0][i])*h_scale
+						// console.log(h_y)
+						this.vis.append("svg:circle")
+									 .attr("r", this.r).attr("fill", "#fcba03")
+									 .attr("id", "circle"+parseInt(i))
+									 .attr("cx", parseInt(this.offsetX+this.x_range/this.bln_c + i*this.inbetween))
+									 .attr("cy", parseInt(h_y))
+									 .text(this.input[0][i])
+									
+										this.vis.append("svg:text")
+						 				.attr("id", "circle_t"+parseInt(i))
+						 				.attr("x",  parseInt(this.offsetX+this.x_range/this.bln_c + i*this.inbetween))						 
+						 				.attr("y", parseInt(h_y))
+						 				.attr("dy", "0.3em")
+						 				.text(this.input[0][i])
+						 				.style("font-size", "2.0em")
+						 				.style('fill', '#000000') 
+						 				.style("text-anchor", "middle")
+						 				.style("font-weight", "bold")
+
+						}
+					}else{
+						// console.log(step)
+					// Update circle height
+					// This branch should only be executed in "isKaboomedBelowMid" case
+					// console.log(step.pos)
+					for(let i = 0;i < this.bln_c;i++){
+						h_y = (ub-step.pos[i])*h_scale
+						// console.log(h_y)
+						d3.select("#circle"+i)
+							.attr("cy", parseInt(h_y))
+							.text(step.pos[i])
+						d3.select("#circle_t"+i)
+							.attr("y", parseInt(h_y))
+							.text(step.pos[i]);
+						}
+				}
+			};
+
+			// Setting up the bottom axis and balloons
 			Visualizer.prototype.setUp = function() {
-				console.log("Setting the ballons...");
-				console.log(this.input)
+				let scale, x_axis;
+				// Creating x axis
+			
+				var bln_idx = Array.from({length:this.bln_c + 1}, (_, i) => i),
+											x_ticks = range_Step(0, this.bln_c, 1);
+
+
+				scale = d3.scaleLinear()
+							  	.domain([d3.min(bln_idx), d3.max(bln_idx)])
+								  .range([0, this.x_range]);
+
+		  	x_axis = d3.axisBottom()
+		  					   .tickValues(x_ticks)
+		  					   .scale(scale)
+		  					   .tickFormat(d3.format("d"))
+
+		  	this.vis.append("g")
+		  	   .attr("transform", "translate("+ this.offsetX + "," + (this.height+this.offsetY) +")")
+		  	   .call(x_axis)
+
+				this.drawBalloons(null);
+				
 			};
 			Visualizer.prototype.drawStep = function(step) {
 				if(!(step != null)) {
@@ -114,30 +357,216 @@ body{
 					return;
 				}
 
-				if (this.statusElement != null) {
-					this.statusElement.innerHTML = "";
-					this.statusElement.innerHTML += this.step.status;
+				// if (this.statusElement != null) {
+				// 	this.statusElement.innerHTML = "";
+				// 	this.statusElement.innerHTML += step.status;
+				// }
+
+				// console.log("#midline"+parseInt(this.curr_mid-1))
+
+				if(document.querySelector("#midline"+parseInt(this.curr_mid-1))){
+					// console.log("#midline"+this.curr_mid-1)
+					d3.select("#midline"+parseInt(this.curr_mid-1))
+					  .attr("stroke", "black");
 				}
 
-				switch(change.type){
+				// Refreshing view according to status
+				switch(step.status){
 					case "calculatingUpperbound":
+						
+						let y_ticks, y_axis;
+						this.upperbound = step.upperbound
+						y_ticks = range_Step(0, this.upperbound, 2)
+
+						scale = d3.scaleLinear()
+											.domain([0, this.upperbound])
+											.range([this.height, 0]);
+
+		  			y_axis = d3.axisLeft()
+		  					 			 .scale(scale);
+						
+						this.vis.append("g")
+		  	 			 .attr("transform", "translate("+ this.offsetX + "," + this.offsetY + ")")
+		  	 			 .call(y_axis);
+
+		  	 		this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "Calculate upperbound...";
+
+						// Only the step whose status is "calculatingUpperbound"
+						// has property <upperbound>
+						let ub = 	d3.select("#ub")
+					  ub.text(step.upperbound)
+					  	.style("font-size", "2.0em")
+					  	.style('fill', '#0000FF')
+					  	.style("font-weight", "bold")
+
+					  setTimeout(function(){
+					  	ub.style("font-size", "1.0em")
+					  		.style('fill', '#000000')
+								.style("font-weight", "normal")					  		
+					  },800)
 
 						break;
 					case "settingRight": 
-					case "calculatingMid":
-					case "drawMid":
-					case "isAboveOriginalHeight":
-					case "isKaboomedBelowMid":
-					case "updateBound":
-					case "answerFound":
-					}
+						if(this.sec != 5){
+							this.statusElement.innerHTML = "";					
+							this.statusElement.innerHTML += "Setting right bound...";
+							let right = d3.select("#right")
+						  right.text(step.right)
+					  	.style("font-size", "2.0em")
+					  	.style('fill', '#0000FF')
+					  	.style("font-weight", "bold")
 
+					  	setTimeout(function(){
+					  		right.style("font-size", "1.0em")
+					  		.style('fill', '#000000')
+								.style("font-weight", "normal")					  		
+					  	},600)	
+						}else{
+							this.statusElement.innerHTML = "";					
+							this.statusElement.innerHTML += "Mid is too high. Setting right = mid";
+							let right = d3.select("#right")
+						  right.text(step.right)
+					  	.style("font-size", "2.0em")
+					  	.style('fill', '#0000FF')
+					  	.style("font-weight", "bold")
+
+					  	setTimeout(function(){
+					  		right.style("font-size", "1.0em")
+					  		.style('fill', '#000000')
+								.style("font-weight", "normal")					  		
+					  	},600)	
+
+					  	this.sec = 0;
+						}
+						break;
+
+					case "calculatingMid":
+						this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "Calculate mid...";
+						let mid = d3.select("#mid")
+					  mid.text(step.mid)
+					  	.style("font-size", "2.0em")
+					  	.style('fill', '#0000FF')
+					  	.style("font-weight", "bold")
+
+					  setTimeout(function(){
+					  	mid.style("font-size", "1.0em")
+					  		.style('fill', '#000000')
+								.style("font-weight", "normal")					  		
+					  },600)
+						break;							
+
+					case "drawMid":
+						this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "Drawing mid line...";
+
+						let h_scale = (this.height + this.offsetY)/this.upperbound, 
+								h_y = (this.upperbound-step.mid)*h_scale
+						this.vis.append("line")
+							 .attr("id", "midline"+parseInt(this.curr_mid))
+							 .attr("x1", this.offsetX)
+					     .attr("x2", this.offsetX + this.x_range)
+					     .attr("y1", parseInt(h_y))
+					     .attr("y2", parseInt(h_y))
+					     .attr("stroke", "black")
+					     .attr("stroke-width", 5);
+					  // console.log(d3.select("#midline"+parseInt(this.curr_mid)));
+					  // setTimeout(function(){
+					  // 	d3.select("#midline"+parseInt(this.curr_mid))
+					  // 		.attr("stroke-width", 1);				  		
+					  // },600)
+						break;
+					case "isAboveOriginalHeight":
+						this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "Checking whether initial height of mid line is legal";
+
+						if(!step.valid){
+							d3.select("#midline"+this.curr_mid)
+								.attr("stroke", "red");
+						}else{
+							d3.select("#midline"+this.curr_mid)
+								.attr("stroke", "green");
+						}
+						this.curr_mid++;
+						break;
+					case "balloonFloat": 
+						if(this.sec == 0){
+							let h_scale = (this.height + this.offsetY)/this.upperbound;
+							for(let i = 0;i < this.bln_c;i++){
+								let h_y = (this.upperbound-this.input[0][i])*h_scale
+								// console.log(h_y)
+								
+								d3.select("#circle"+parseInt(i))
+								  .attr("opacity", 1)
+								  .attr("fill", "#fcba03");
+								
+								d3.select("#circle_t"+parseInt(i))
+									.attr("opacity", 1)	
+							}
+						}else{
+							this.statusElement.innerHTML = "";					
+							this.statusElement.innerHTML += "BALLOONS UP";					
+						}
+						console.log(step)
+						this.drawBalloons(step);
+						break;
+					case "isKaboomedBelowMid":
+						this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "At second "+parseInt(this.sec)+".";
+
+						if(!step.valid){
+							// Balloon height is illegal. mid is too low.
+							console.log("Height violation");
+							this.statusElement.innerHTML += "Height violation!! Mid is too low.";
+							this.statusElement.style.color = "red"
+							this.sec = 0;
+							console.log(step)
+						}else{
+							// Balloon height is valid. Shoot.
+							console.log(step)
+
+							this.statusElement.innerHTML += "Shoot balloon "+parseInt(step.balloon_index);
+							let c = d3.select("#circle"+parseInt(step.balloon_index)),
+								  t = d3.select("#circle_t"+parseInt(step.balloon_index));
+
+							c.attr("fill", "#FF0000")
+							setTimeout(function(){
+								c.attr("opacity", 0)
+								t.attr("opacity", 0);
+
+							}, 100)
+							this.sec++;
+						}
+						break;
+					case "settingLeft":
+						this.statusElement.style.color = "black";
+						this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "Setting left...";
+						let left = d3.select("#left")
+					  left.text(step.left)
+					  	.style("font-size", "2.0em")
+					  	.style('fill', '#0000FF')
+					  	.style("font-weight", "bold")
+
+					  setTimeout(function(){
+					  	left.style("font-size", "1.0em")
+					  		.style('fill', '#000000')
+								.style("font-weight", "normal")					  		
+					  },600)
+						break;
+					case "answerFound":
+						this.statusElement.style.color = "green";
+						this.statusElement.innerHTML = "";					
+						this.statusElement.innerHTML += "(right - left > 1) is false! Answer found. Minimum penalty is "+parseInt(step.mid);
+						break;
+					}
 			};
 
 			return Visualizer
 		})();
 
-		visualizer = null;
+		var visualizer = null;
 
 		window.parse = function(trace){
 			return visualizer = new Visualizer(trace)
@@ -145,15 +574,26 @@ body{
 
 		window.onload = function(){
 			var problemActionMaker, problemControls, button,
-			firstFunction, firstInput, i, lastFunction, lastInput, nextFunction, nextInput, previousFunction, previousInput;
+			firstFunction, firstInput, i, lastFunction, lastInput, nextFunction, nextInput, previousFunction, previousInput, viewport;
 			visualizer.setStatusElement(document.querySelector('#status'));
+			viewport = visualizer.setUp();
 			problemActionMaker = function(i) {
 				return function() {
 					return visualizer.setProblem(i);
 				}
 			}
-			visualizer.setUp();
 
+			// Register (previous <) and (next >) buttons with drawing functions
+			previousInput = document.querySelector("#previous");
+			previousFunction = function() {
+				return visualizer.previous();
+			};
+			previousInput.addEventListener('click', previousFunction, false);
+			nextInput = document.querySelector("#next");
+			nextFunction = function() {
+				return visualizer.next();
+			}
+			nextInput.addEventListener('click', nextFunction, false);
 
 			// }
 
@@ -163,97 +603,4 @@ body{
 			
 		</script>
 		<script type="text/javascript" src="./trace.jsonp"></script>
-	</head>
-	
-<body>
-    <h1>射撃王 -- 二分探索法</h1>
-    <div id="status_bar">
-    	<b>Status: </b> <span id="status"></span>
-    </div>
-    <div id="states"> 
-    	<b>Left:</b><span id="left">  </span>
-    	<b>Mid: </b><span id="mid">  </span>
-    	<b>Right </b><span id="right">  </span>
-    	<b>Upperbound: </b><span id="ub">  </span>
-     </div>
-
-    <div class="viewport"></div>
-    <p id="text"></p>
-</body>
-<script>
-	var bln_c;//number of balloons
-	var vis, scale, x_axis, y_axis, offsetX, offsetY
-	var width = 1000,
-			height = 500;
-
-
-
-	vis = d3.select("body")
-					.append("svg")
-					.attr("width", parseInt(width))
-					.attr("height",parseInt(height));
-
-	// Offset everything
-	offsetX = 50
-	offsetY = -30
-
-	// Creating x-y axises
-	bln_c = 10;
-	const range = (start, stop, step) => Array.from({ length: (stop - start) / step + 1}, (_, i) => start + (i * step));
-	
-	var bln_idx = Array.from({length:bln_c + 1}, (_, i) => i)
-			max_h = 60,
-			h_ticks = range(0, max_h, 10)
-
-	x_range = 50 * bln_c
-	scale = d3.scaleLinear()
-						.domain([d3.min(bln_idx), d3.max(bln_idx)])
-						.range([0, x_range]);
-
-  x_axis = d3.axisBottom()
-  					 .scale(scale);
-  
-  scale = d3.scaleLinear()
-						.domain([d3.min(h_ticks), d3.max(h_ticks)])
-						.range([height, 0]);
-
-  y_axis = d3.axisLeft()
-  					 .scale(scale);
-
-  vis.append("g")
-  	 .attr("transform", "translate("+ offsetX + "," + (height+offsetY) +")")
-  	 .call(x_axis)
-  
-  vis.append("g")
-  	 .attr("transform", "translate("+ offsetX + "," + offsetY + ")")
-  	 .call(y_axis);
-
-
-  // drawBalloons = function(vp, x, y, offset){
-	var x = 20, y = 300, r = 20, offset_bx = (width-400)/bln_c, offset_by = -10, inbetween = x_range/bln_c;
-
-	console.log(inbetween)
-	for (let i = 0; i < bln_c; i++){
-		vis.append("svg:circle")
-		 .attr("r", r).attr("fill", "#fcba03")
-		 .attr("id", parseInt(i))
-		 .attr("cx", parseInt(offsetX+x_range/bln_c + i*inbetween))
-		 .attr("cy", parseInt(height + offsetY + offset_by - r))
-	}
-
-	// draw line
-	var midline_h = 100 
-	vis.append("line")
-		 .attr("x1", offsetX)
-     .attr("x2", offsetX + x_range)
-     .attr("y1", midline_h)
-     .attr("y2", midline_h)
-     .attr("stroke", "black")
-</script>
-
 </html>
-
-
-
-
-

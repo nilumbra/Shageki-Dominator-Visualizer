@@ -28,8 +28,7 @@ def P(height, rspeed, mid):
         # t[i] represents the time limit you have to shoot the balloon.
         t[i] = int((mid - height[i]) / rspeed[i])
         mheight.append([i,t[i]])
-    
-    # problem.isStartingHeightAboveMid(H, mid, trace)
+
     # Output visualization purpose
     t.sort()
     mheight.sort(key = lambda tup: tup[1])
