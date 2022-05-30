@@ -19,7 +19,7 @@ class ShagekiouProblem(object):
         self.height = height
         self.rising_speed = rising_speed
 
-    # Invariance 
+    # Invariant
     def P(self, mid, trace = None):
         t = [] # list to keep time limits that balloons need to be shot
 

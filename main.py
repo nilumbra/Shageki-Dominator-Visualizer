@@ -38,12 +38,6 @@ def main():
     # What, if any, should be the return value of shagekiou algorithm?
     shagekiou = algorithm(problem, trace = tracer)
     steps.append(tracer.sequence)
-    
-    # status = "is NOT a peak (INCORRECT!)"
-    # if problem.isPeak(peak):
-    #     status = "is a peak"
-
-    # print(name + " : " + str(peak) + " => " + status)
 
     # write the trace out to a file
     with open("trace.jsonp", "w") as traceFile:
